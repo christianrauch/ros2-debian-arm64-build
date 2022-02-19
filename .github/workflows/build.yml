@@ -1,0 +1,40 @@
+name: ROS2 arm64
+
+on:
+  # push:
+  #   branches: [ master ]
+  # pull_request:
+  #   branches: [ master ]
+
+  workflow_dispatch:
+
+env:
+  IMAGE: arm64v8/debian:bullseye
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: install docker container
+        run: |
+          sudo apt update
+          sudo apt install -y qemu-user-static
+          docker pull $IMAGE
+          docker run --rm --platform linux/arm64 $IMAGE cat /etc/os-release
+
+      - uses: actions/checkout@v2
+
+      - name: install the build script
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/ros2
+          cp $GITHUB_WORKSPACE/install_ros.sh $GITHUB_WORKSPACE/ros2
+
+      - name: build
+        run: |
+          docker run --rm --platform linux/arm64 --interactive --mount type=bind,source="$(pwd)"/ros2,target=/ros2 arm64v8/debian:bullseye /ros2/install_ros.sh
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ros2-debian-arm64
+          path: $GITHUB_WORKSPACE/ros2/install/
