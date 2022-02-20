@@ -21,20 +21,41 @@ jobs:
           sudo apt update
           sudo apt install -y qemu-user-static
           docker pull $IMAGE
-          docker run --rm --platform linux/arm64 $IMAGE cat /etc/os-release
 
       - uses: actions/checkout@v2
 
-      - name: install the build script
+      - name: start a container and keep it alive
         run: |
-          mkdir -p $GITHUB_WORKSPACE/ros2
-          cp $GITHUB_WORKSPACE/install_ros.sh $GITHUB_WORKSPACE/ros2
+          docker run --name ros2_build --platform linux/arm64 --mount type=bind,source=$GITHUB_WORKSPACE,target=/ros2 -di $IMAGE bash
+          docker container ls -a
 
-      - name: build
+      - name: test running container
         run: |
-          docker run --rm --platform linux/arm64 --interactive --mount type=bind,source="$(pwd)"/ros2,target=/ros2 arm64v8/debian:bullseye /ros2/install_ros.sh
+          docker container ls -a
+          docker exec --interactive ros2_build cat /etc/os-release
+          docker exec --interactive ros2_build uname -a
+
+      - name: download sources and install dependencies
+        run: docker exec --interactive ros2_build /ros2/install_ros.sh
+
+      # build subset of packages in stages to prevent exceeding the 6h job execution time limit
+
+      - name: build (rcl)
+        run: docker exec --interactive ros2_build /ros2/build_packages.sh rcl
+
+      - name: build (ros_base)
+        run: docker exec --interactive ros2_build /ros2/build_packages.sh rcl ros_base
+
+      - name: build (image_common)
+        run: docker exec --interactive ros2_build /ros2/build_packages.sh ros_base image_common
+
+      - name: build (vision_opencv)
+        run: docker exec --interactive ros2_build /ros2/build_packages.sh image_common vision_opencv
+
+      - name: build (demo_nodes_cpp)
+        run: docker exec --interactive ros2_build /ros2/build_packages.sh vision_opencv demo_nodes_cpp
 
       - uses: actions/upload-artifact@v2
         with:
           name: ros2-debian-arm64
-          path: $GITHUB_WORKSPACE/ros2/install/
+          path: $GITHUB_WORKSPACE/install/
