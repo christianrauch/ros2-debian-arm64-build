@@ -22,6 +22,7 @@ apt install --no-install-recommends -y \
   python3-pip \
   python3-pytest-cov \
   python3-rosdep \
+  python3-rosinstall-generator \
   python3-setuptools \
   python3-vcstool \
   wget \
@@ -44,13 +45,11 @@ python3 -m pip install -U \
   pytest
 
 echo ">> download source"
-mkdir -p /ros2/src
-cd /ros2
-wget https://raw.githubusercontent.com/ros2/ros2/galactic/ros2.repos
-vcs import src < ros2.repos
-
-# ignore packages with GUI dependencies
-touch /ros2/src/{ros-visualization,ros2/ros1_bridge,ros2/rviz}/COLCON_IGNORE
+SCRIPT_PATH=$(dirname $(realpath $0))
+mkdir -p $SCRIPT_PATH/src
+cd $SCRIPT_PATH
+rosinstall_generator ros_base image_common vision_opencv demo_nodes_cpp --rosdistro galactic --deps --format=repos > base.repos
+vcs import src < base.repos
 
 echo ">> install build dependencies"
 rosdep init
@@ -58,6 +57,6 @@ rosdep update
 source /etc/os-release
 rosdep install --from-paths src --ignore-src -y --os=debian:$VERSION_CODENAME --skip-keys "fastcdr rti-connext-dds-5.3.1 urdfdom_headers python3-ifcfg"
 
-echo ">> build workspace"
-cd /ros2
-colcon build --merge-install
+# echo ">> build workspace"
+# cd $SCRIPT_PATH
+# colcon build --merge-install
