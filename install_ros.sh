@@ -51,11 +51,14 @@ cd $SCRIPT_PATH
 rosinstall_generator ros_base image_common vision_opencv demo_nodes_cpp --rosdistro galactic --deps --format=repos > base.repos
 vcs import src < base.repos
 
+# ignore unused RMW/DDS implementations
+touch $SCRIPT_PATH/src/{rmw_connextdds,rmw_cyclonedds_cpp,cyclonedds}/COLCON_IGNORE
+
 echo ">> install build dependencies"
 rosdep init
 rosdep update
 source /etc/os-release
-rosdep install --from-paths src --ignore-src -y --os=debian:$VERSION_CODENAME --skip-keys "fastcdr rti-connext-dds-5.3.1 urdfdom_headers python3-ifcfg"
+rosdep install --from-paths src --ignore-src -y --os=debian:$VERSION_CODENAME --skip-keys "rti-connext-dds-5.3.1 python3-ifcfg rmw_cyclonedds_cpp rmw_connextdds"
 
 # echo ">> build workspace"
 # cd $SCRIPT_PATH
