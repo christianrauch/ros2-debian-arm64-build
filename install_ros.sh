@@ -48,7 +48,7 @@ echo ">> download source"
 SCRIPT_PATH=$(dirname $(realpath $0))
 mkdir -p $SCRIPT_PATH/src
 cd $SCRIPT_PATH
-rosinstall_generator ros_base image_common vision_opencv demo_nodes_cpp --rosdistro galactic --deps --format=repos > base.repos
+rosinstall_generator ros_base ament_cmake_clang_format image_common vision_opencv demo_nodes_cpp --rosdistro galactic --deps --format=repos > base.repos
 vcs import src < base.repos
 
 # ignore unused RMW/DDS implementations
